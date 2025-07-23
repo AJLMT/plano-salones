@@ -1,0 +1,68 @@
+<div class="main-container">
+  <h2>Generador de Planos</h2>
+
+  <!-- Selección de salón -->
+  <label for="salonSelect">Selecciona un salón:</label>
+  <select id="salonSelect" [(ngModel)]="selectedSalon" (ngModelChange)="onSalonChange()">
+    <option *ngFor="let salon of salones" [ngValue]="salon">{{salon.name}}</option>
+  </select>
+
+
+  <!-- Panel de creación de mesas -->
+  <div class="toolbar">
+    <h3>Añadir nueva mesa</h3>
+    <label>Tipo:
+      <select [(ngModel)]="nuevaMesaTipo">
+        <option value="rect">Rectangular</option>
+        <option value="circle">Circular</option>
+      </select>
+    </label>
+    <label>Ancho: <input type="number" [(ngModel)]="nuevaMesaWidth"></label>
+    <label>Alto: <input type="number" [(ngModel)]="nuevaMesaHeight"></label>
+    <button (click)="addMesa()">Añadir Mesa</button>
+  </div>
+
+  <!-- Panel de edición de mesa seleccionada -->
+  <div *ngIf="selectedMesa" class="edit-panel">
+    <h3>Editar mesa</h3>
+    <label>Número: <input [(ngModel)]="selectedMesa.numero" (ngModelChange)="saveState()"></label>
+    <label>Comensales: <input [(ngModel)]="selectedMesa.comensales" (ngModelChange)="saveState()"></label>
+    <label>Ancho: <input type="number" [(ngModel)]="selectedMesa.width" (ngModelChange)="saveState()"></label>
+    <label>Alto: <input type="number" [(ngModel)]="selectedMesa.height" (ngModelChange)="saveState()"></label>
+    <button (click)="deleteMesa()">Eliminar Mesa</button>
+  </div>
+
+  <!-- Contenedor del plano con mesas -->
+  <div class="plano-container">
+    <img [src]="selectedSalon?.path" alt="Plano del salón" class="plano-img" />
+
+    <!-- Mesas -->
+    <div *ngFor="let mesa of mesas"
+         cdkDrag
+         (cdkDragEnded)="updateMesaPosition(mesa, $event)"
+         [cdkDragFreeDragPosition]="{x: mesa.x, y: mesa.y}"
+         (click)="selectMesa(mesa)"
+         [style.width.px]="mesa.width"
+         [style.height.px]="mesa.height"
+         [ngStyle]="{
+           'border-radius': mesa.tipo === 'circle' ? '50%' : '0',
+           'border': selectedMesa?.id === mesa.id ? '3px solid red' : '2px solid black',
+           'background': '#f0f0f0',
+           'position': 'absolute',
+           'cursor': 'move',
+           'display': 'flex',
+           'align-items': 'center',
+           'justify-content': 'center'
+         }">
+      <span>{{ mesa.numero }}</span>
+      <span style="position:absolute; bottom:2px; right:2px; font-size:12px;">{{ mesa.comensales }}</span>
+    </div>
+  </div>
+
+  <!-- Botones de guardar/cargar/descargar -->
+  <button (click)="clearMesas()">Eliminar todas las mesas</button>
+  <button (click)="downloadState()">Descargar estado (.json)</button>
+  <input type="file" (change)="loadState($event)" accept=".json" />
+  <button (click)="downloadAsImage()">Descargar como JPG</button>
+  <button (click)="downloadAsPDF()">Descargar como PDF</button>
+</div>
