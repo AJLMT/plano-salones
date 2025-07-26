@@ -43,7 +43,7 @@ export class MainComponent implements OnInit {
   nuevaMesaTipo: 'rect' | 'circle' = 'circle';
   nuevaMesaWidth = 50;
   nuevaMesaHeight = 50;
-
+ 
   ngOnInit() {
     this.checkSession();
 
