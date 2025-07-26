@@ -4,6 +4,8 @@ import { CommonModule } from '@angular/common';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { DragDropModule } from '@angular/cdk/drag-drop';
+import { ChangeDetectorRef } from '@angular/core';
+
 
 interface Mesa {
   id: number;
@@ -24,9 +26,12 @@ interface Mesa {
   styleUrls: ['./main.css']
 })
 export class MainComponent implements OnInit {
+  constructor(private cdr: ChangeDetectorRef) {}
+
   salones = [
-    { name: 'Salón 1', path: '../assets/salones/salon1.jpg' },
-    { name: 'Salón 2', path: '../assets/salones/salon2.jpg' }
+    { name: 'Almazara', path: 'assets/Almazara.jpg' },
+    { name: 'Pinazo B', path: 'assets/Pinazo B.jpg' },
+    { name: 'Almazara1', path: 'assets/Almazara1.jpg' },
   ];
   selectedSalon = this.salones[0];
 
@@ -85,13 +90,19 @@ export class MainComponent implements OnInit {
   }
 
   updateMesaPosition(mesa: Mesa, event: any) {
-    mesa.x = event.source.getFreeDragPosition().x;
-    mesa.y = event.source.getFreeDragPosition().y;
+    const { x, y } = event.source.getFreeDragPosition();
+    mesa.x = x;
+    mesa.y = y;
     this.saveState();
   }
 
   downloadState() {
-    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(this.mesas));
+    const state = {
+      mesas: this.mesas,
+      selectedSalon: this.selectedSalon
+    };
+
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state));
     const downloadAnchorNode = document.createElement('a');
     downloadAnchorNode.setAttribute("href", dataStr);
     downloadAnchorNode.setAttribute("download", `plano_${new Date().toISOString().split('T')[0]}.json`);
@@ -101,20 +112,33 @@ export class MainComponent implements OnInit {
   }
 
   loadState(event: any) {
-    const file = event.target.files[0];
-    if (!file) return;
+  const file = event.target.files[0];
+  if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = (e: any) => {
-      try {
-        this.mesas = JSON.parse(e.target.result);
+  const reader = new FileReader();
+  reader.onload = (e: any) => {
+    try {
+      const state = JSON.parse(e.target.result);
+      if (state.mesas && state.selectedSalon) {
+        this.mesas = state.mesas;
+        // Añadimos un timestamp para forzar que Angular recargue la imagen
+        this.selectedSalon = {
+          ...state.selectedSalon,
+          path: `${state.selectedSalon.path}?t=${new Date().getTime()}`
+        };
         this.mesaIdCounter = this.mesas.length + 1;
         this.saveState();
-      } catch (err) {
-        alert('Error al cargar el archivo');
+        this.cdr.detectChanges();
+      } else {
+        alert("El archivo JSON no tiene el formato correcto");
       }
-    };
-    reader.readAsText(file);
+    } catch (err) {
+      alert("Error al leer el archivo JSON");
+    }
+  };
+  reader.readAsText(file);
+      this.deleteMesa();
+
   }
 
   async downloadAsImage() {
@@ -162,7 +186,18 @@ export class MainComponent implements OnInit {
     this.saveState();
   }
 
-  onSalonChange() {
-    this.clearMesas();
+  deleteAllTables() {
+    if(this.mesas.length == 0){
+      this.clearMesas();
+    }
+    else{
+      const confirmed = window.confirm("¿Seguro que quiere borrar todas las mesas?");
+      if (confirmed) {
+        this.clearMesas();
+        console.log("Mesas borradas");
+      } else {
+        console.log("Cancelado");
+      }
+    }
   }
 }
